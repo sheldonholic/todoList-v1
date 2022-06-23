@@ -60,6 +60,6 @@ app.post("/work", function (req, res) {
     res.redirect("/work");
 });
 
-app.listen(5500, function () {
+app.listen(process.env.PORT || 5500, function () {
     console.log("Started");
 });
