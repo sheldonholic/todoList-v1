@@ -3,9 +3,27 @@ const bodyParser = require('body-parser');
 const date = require(__dirname + '/date.js');
 const app = express();
 
+const mongoose = require('mongoose');
 
-var text = ["Buy Food", " Cook Food"];
-var workList = [];
+mongoose.connect("mongodb://localhost:27017/todoList");
+
+const itemSchema = new mongoose.Schema(
+    {
+        name: String
+    }
+);
+
+const listModel = mongoose.model(
+    "item",
+    itemSchema
+);
+
+const workModel = mongoose.model(
+    "work",
+    itemSchema
+);
+
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
@@ -20,15 +38,30 @@ app.get("/", function (req, res) {
     };
 
     var day = today.toLocaleDateString("en-UK", options);
+    listModel.find({}, function (err, doc) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            res.render("index", { listType: date.getDay(), newItem: doc });
+        }
+    });
 
-    res.render("index", { listType: date.getDay(), newItem: text });
+
 }
 )
 
 //workList
 app.get("/work", function (req, res) {
+    workModel.find({}, function (err, doc) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            res.render("index", { listType: "Work List", newItem: doc });
+        }
+    });
 
-    res.render("index", { listType: "Work List", newItem: workList });
 });
 
 //adding about page route
@@ -40,15 +73,40 @@ app.get("/about", function (req, res) {
 app.post("/", function (req, res) {
     var item = req.body.add;
     if (req.body.button === "Work") {
-        workList.push(item);
+        const item1 = new workModel(
+            {
+                name: item
+            }
+        );
+        item1.save();
+
         res.redirect("/work");
     }
     else {
-        text.push(item);
+        const item1 = new listModel(
+            {
+                name: item
+            }
+        );
+        item1.save();
+
         res.redirect("/");
     }
-    //console.log(req.body);
+    //console.log(req.body)
 
+
+});
+
+app.post("/delete", function (req, res) {
+    const item = req.body.done;
+    listModel.deleteOne({ name: item }, function (err) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            res.redirect("/");
+        }
+    });
 
 });
 
@@ -59,6 +117,23 @@ app.post("/work", function (req, res) {
     workList.push(item);
     res.redirect("/work");
 });
+
+
+app.post("/delete", function (req, res) {
+    console.log(req.body);
+})
+
+
+app.get("/:title", function (req, res) {
+    var value = req.params.title;
+    posts.forEach(function (p) {
+        if (p.title === value || lodash.kebabCase(p.title) === value) {
+            res.render("post", { title: p.title, content: p.content });
+        }
+    });
+    //console.log("Not found");
+});
+
 
 app.listen(process.env.PORT || 5500, function () {
     console.log("Started");
